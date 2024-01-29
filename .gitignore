@@ -1,2 +1,4 @@
 **/solution.*
 node_modules/*
+
+dist/*
