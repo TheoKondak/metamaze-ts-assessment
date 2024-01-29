@@ -1,39 +1,36 @@
 import { Annotation, Entity, Input } from './types/input';
-import { ConvertedAnnotation, ConvertedEntity, Output } from './types/output';
+import { ConvertedAnnotation, ConvertedEntity, Output, EntityMap, EntityId } from './types/output';
 
-// TODO: Convert Input to the Output structure. Do this in an efficient and generic way.
-// HINT: Make use of the helper library "lodash"
-export const convertInput = (input: Input): Output => {
+import data from './input.json';
+
+export const convertInput = (input: Input): void => {
   const documents = input.documents.map((document) => {
-    // TODO: map the entities to the new structure and sort them based on the property "name"
-    // Make sure the nested children are also mapped and sorted
-    const entities = document.entities.map(convertEntity).sort(sortEntities);
+    const entityMap: EntityMap = {};
 
-    // TODO: map the annotations to the new structure and sort them based on the property "index"
-    // Make sure the nested children are also mapped and sorted
-    const annotations = document.annotations.map(convertAnnotation).sort(sortAnnotations);
-    return { id: document.id, entities, annotations };
+    document.entities.forEach((entity) => {
+      entityMap[entity.id] = {
+        ...{ id: entity.id, name: entity.name, type: entity.type, class: entity.class },
+        children: [],
+      };
+    });
+
+    const entities: ConvertedEntity[] = document.entities.map((entity) => convertEntity(entity, entityMap));
+
+    return {
+      id: document.id,
+      entities: entities,
+    };
   });
-
-  return { documents };
+  console.log(JSON.stringify(documents, null, 2));
+  // return { documents };
 };
 
-// HINT: you probably need to pass extra argument(s) to this function to make it performant.
-const convertEntity = (entity: Entity): ConvertedEntity => {
-  throw new Error('Not implemented');
+const convertEntity = (entity: Entity, entityMap: EntityMap): ConvertedEntity => {
+  entity.refs.forEach(
+    (refId: EntityId) => entityMap[refId] && entityMap[refId].children.push({ ...entityMap[entity.id] }),
+  );
+
+  return entityMap[entity.id];
 };
 
-// HINT: you probably need to pass extra argument(s) to this function to make it performant.
-const convertAnnotation = (annotation: Annotation): ConvertedAnnotation => {
-  throw new Error('Not implemented');
-};
-
-const sortEntities = (entityA: ConvertedEntity, entityB: ConvertedEntity) => {
-  throw new Error('Not implemented');
-};
-
-const sortAnnotations = (annotationA: ConvertedAnnotation, annotationB: ConvertedAnnotation) => {
-  throw new Error('Not implemented');
-};
-
-// BONUS: Create validation function that validates the result of "convertInput". Use yup as library to validate your result.
+convertInput(data as Input);

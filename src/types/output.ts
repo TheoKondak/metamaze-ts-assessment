@@ -25,3 +25,6 @@ export interface ConvertedAnnotation {
   index: number; // the startIndex of the first index of the list of indices. Namely indices[0].startIndex, if it exists. In case it's a group (indices = []), take the earliest index of the children.
   children: ConvertedAnnotation[]; // pay attention to this property
 }
+
+export type EntityMap = { [id: string]: ConvertedEntity };
+export type EntityId = string;
