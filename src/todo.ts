@@ -26,14 +26,14 @@ export const convertInput = (input: Input): Output => {
       annotationMap[annotation.id] = {
         ...{
           id: annotation.id,
-          value: annotation.value,
           entity: {
             id: entityMap[annotation.entityId].id,
             name: entityMap[annotation.entityId].name,
           },
+          value: annotation.value,
+          index: -1,
+          children: [],
         },
-        index: -1,
-        children: [],
       };
     });
 
