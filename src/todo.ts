@@ -47,6 +47,8 @@ export const convertInput = (input: Input): Output => {
         : convertAnnotation(annotation, annotationMap);
     });
 
+    result.sort(sortAnnotations);
+
     return {
       id: document.id,
       entities,
@@ -91,4 +93,9 @@ const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap)
 const sortEntities = (entityA: ConvertedEntity, entityB: ConvertedEntity): number => {
   entityA.children.length > 1 && entityA.children.sort(sortEntities);
   return entityA.name.toLowerCase() < entityB.name.toLowerCase() ? -1 : 1;
+};
+
+const sortAnnotations = (annotationA: ConvertedAnnotation, annotationB: ConvertedAnnotation): number => {
+  annotationA.children.length > 1 && annotationA.children.sort(sortAnnotations);
+  return annotationA.index < annotationB.index ? -1 : 1;
 };
