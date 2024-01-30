@@ -9,8 +9,6 @@ import {
   AnnotationId,
 } from './types/output';
 
-import data from './input.json';
-
 export const convertInput = (input: Input): Output => {
   const documents = input.documents.map((document) => {
     const entityMap: EntityMap = {},
@@ -39,7 +37,9 @@ export const convertInput = (input: Input): Output => {
       };
     });
 
-    const entities: ConvertedEntity[] = document.entities.map((entity) => convertEntity(entity, entityMap));
+    const entities: ConvertedEntity[] = document.entities
+      .map((entity) => convertEntity(entity, entityMap))
+      .sort(sortEntities);
 
     document.annotations.forEach((annotation) => {
       annotation.refs.length < 1
@@ -53,6 +53,7 @@ export const convertInput = (input: Input): Output => {
       annotations: result,
     };
   });
+
   return { documents };
 };
 
@@ -60,7 +61,6 @@ const convertEntity = (entity: Entity, entityMap: EntityMap): ConvertedEntity =>
   entity.refs.forEach(
     (refId: EntityId) => entityMap[refId] && entityMap[refId].children.push({ ...entityMap[entity.id] }),
   );
-
   return entityMap[entity.id];
 };
 const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap): ConvertedAnnotation => {
@@ -86,4 +86,9 @@ const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap)
     error instanceof Error && console.error(`Error converting annotation: ${error.message}`);
     throw error;
   }
+};
+
+const sortEntities = (entityA: ConvertedEntity, entityB: ConvertedEntity): number => {
+  entityA.children.length > 1 && entityA.children.sort(sortEntities);
+  return entityA.name.toLowerCase() < entityB.name.toLowerCase() ? -1 : 1;
 };
