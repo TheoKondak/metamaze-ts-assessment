@@ -1,11 +1,21 @@
 import { Annotation, Entity, Input } from './types/input';
-import { ConvertedAnnotation, ConvertedEntity, Output, EntityMap, EntityId } from './types/output';
+import {
+  ConvertedAnnotation,
+  ConvertedEntity,
+  Output,
+  EntityMap,
+  EntityId,
+  AnnotationMap,
+  AnnotationId,
+} from './types/output';
 
 import data from './input.json';
 
-export const convertInput = (input: Input): void => {
+export const convertInput = (input: Input): Output => {
   const documents = input.documents.map((document) => {
-    const entityMap: EntityMap = {};
+    const entityMap: EntityMap = {},
+      annotationMap: AnnotationMap = {},
+      result: ConvertedAnnotation[] = [];
 
     document.entities.forEach((entity) => {
       entityMap[entity.id] = {
@@ -14,15 +24,36 @@ export const convertInput = (input: Input): void => {
       };
     });
 
+    document.annotations.forEach((annotation) => {
+      annotationMap[annotation.id] = {
+        ...{
+          id: annotation.id,
+          value: annotation.value,
+          entity: {
+            id: entityMap[annotation.entityId].id,
+            name: entityMap[annotation.entityId].name,
+          },
+        },
+        index: -1,
+        children: [],
+      };
+    });
+
     const entities: ConvertedEntity[] = document.entities.map((entity) => convertEntity(entity, entityMap));
+
+    document.annotations.forEach((annotation) => {
+      annotation.refs.length < 1
+        ? result.push(convertAnnotation(annotation, annotationMap))
+        : convertAnnotation(annotation, annotationMap);
+    });
 
     return {
       id: document.id,
-      entities: entities,
+      entities,
+      annotations: result,
     };
   });
-  console.log(JSON.stringify(documents, null, 2));
-  // return { documents };
+  return { documents };
 };
 
 const convertEntity = (entity: Entity, entityMap: EntityMap): ConvertedEntity => {
@@ -32,5 +63,27 @@ const convertEntity = (entity: Entity, entityMap: EntityMap): ConvertedEntity =>
 
   return entityMap[entity.id];
 };
+const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap): ConvertedAnnotation => {
+  try {
+    if (annotation.indices && annotation.indices.length > 0) {
+      annotationMap[annotation.id].index = annotation.indices[0].start;
+    } else if (annotationMap[annotation.id].children.length > 0) {
+      annotationMap[annotation.id].index = annotationMap[annotation.id].children[0].index;
+    } else {
+      throw new Error('Cannot assign index for annotation.');
+    }
 
-convertInput(data as Input);
+    annotation.refs.forEach((refId: AnnotationId) => {
+      if (!annotationMap[refId]) {
+        throw new Error(`Reference annotation with ID ${refId} not found.`);
+      }
+      annotationMap[refId].children.push({ ...annotationMap[annotation.id] });
+    });
+
+    const result = annotationMap[annotation.id];
+    return result;
+  } catch (error) {
+    error instanceof Error && console.error(`Error converting annotation: ${error.message}`);
+    throw error;
+  }
+};

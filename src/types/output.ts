@@ -26,5 +26,8 @@ export interface ConvertedAnnotation {
   children: ConvertedAnnotation[]; // pay attention to this property
 }
 
-export type EntityMap = { [id: string]: ConvertedEntity };
+export type EntityMap = { [id: EntityId]: ConvertedEntity };
 export type EntityId = string;
+
+export type AnnotationMap = { [id: AnnotationId]: ConvertedAnnotation };
+export type AnnotationId = string;
