@@ -13,7 +13,7 @@ export const convertInput = (input: Input): Output => {
   const documents = input.documents.map((document) => {
     const entityMap: EntityMap = {},
       annotationMap: AnnotationMap = {},
-      result: ConvertedAnnotation[] = [];
+      annotations: ConvertedAnnotation[] = [];
 
     document.entities.forEach((entity) => {
       entityMap[entity.id] = {
@@ -43,16 +43,16 @@ export const convertInput = (input: Input): Output => {
 
     document.annotations.forEach((annotation) => {
       annotation.refs.length < 1
-        ? result.push(convertAnnotation(annotation, annotationMap))
+        ? annotations.push(convertAnnotation(annotation, annotationMap))
         : convertAnnotation(annotation, annotationMap);
     });
 
-    result.sort(sortAnnotations);
+    annotations.sort(sortAnnotations);
 
     return {
       id: document.id,
       entities,
-      annotations: result,
+      annotations,
     };
   });
 
@@ -63,6 +63,7 @@ const convertEntity = (entity: Entity, entityMap: EntityMap): ConvertedEntity =>
   entity.refs.forEach(
     (refId: EntityId) => entityMap[refId] && entityMap[refId].children.push({ ...entityMap[entity.id] }),
   );
+  entityMap[entity.id].children.sort(sortEntities);
   return entityMap[entity.id];
 };
 const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap): ConvertedAnnotation => {
@@ -70,6 +71,7 @@ const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap)
     if (annotation.indices && annotation.indices.length > 0) {
       annotationMap[annotation.id].index = annotation.indices[0].start;
     } else if (annotationMap[annotation.id].children.length > 0) {
+      annotationMap[annotation.id].children.sort(sortAnnotations);
       annotationMap[annotation.id].index = annotationMap[annotation.id].children[0].index;
     } else {
       throw new Error('Cannot assign index for annotation.');
@@ -91,11 +93,9 @@ const convertAnnotation = (annotation: Annotation, annotationMap: AnnotationMap)
 };
 
 const sortEntities = (entityA: ConvertedEntity, entityB: ConvertedEntity): number => {
-  entityA.children.length > 1 && entityA.children.sort(sortEntities);
   return entityA.name.toLowerCase() < entityB.name.toLowerCase() ? -1 : 1;
 };
 
 const sortAnnotations = (annotationA: ConvertedAnnotation, annotationB: ConvertedAnnotation): number => {
-  annotationA.children.length > 1 && annotationA.children.sort(sortAnnotations);
   return annotationA.index < annotationB.index ? -1 : 1;
 };
